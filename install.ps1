@@ -37,9 +37,28 @@ npm run setup
 
 $envFile = Join-Path $Dest '.env'
 if (-not (Test-Path $envFile)) {
-  Step 'Optional: AI key'
-  $key = Read-Host 'Paste your Anthropic API key (or press Enter for offline mode)'
-  "ANTHROPIC_API_KEY=$($key.Trim())" | Set-Content $envFile -Encoding ascii
+  Step 'Choose how LearnForge talks to Claude'
+  Write-Host '  1) Claude Pro/Max subscription (log in with your claude.ai account)'
+  Write-Host '  2) Anthropic API key (pay-as-you-go)'
+  Write-Host '  3) Offline mode (no AI, simple demo lessons)'
+  $choice = Read-Host 'Type 1, 2 or 3'
+  switch ($choice) {
+    '1' {
+      if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
+        Write-Host 'Installing Claude Code...'
+        npm install -g @anthropic-ai/claude-code
+        $env:Path += ';' + (npm config get prefix)
+      }
+      Write-Host "`nA login prompt will open. Sign in with your Claude account, then type /exit to continue." -ForegroundColor Yellow
+      claude
+      'LF_PROVIDER=claude-code' | Set-Content $envFile -Encoding ascii
+    }
+    '2' {
+      $key = Read-Host 'Paste your Anthropic API key'
+      "ANTHROPIC_API_KEY=$($key.Trim())" | Set-Content $envFile -Encoding ascii
+    }
+    default { 'ANTHROPIC_API_KEY=' | Set-Content $envFile -Encoding ascii }
+  }
 }
 
 Step 'Starting LearnForge at http://localhost:8787  (Ctrl+C to stop)'
